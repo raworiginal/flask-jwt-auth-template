@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / compiled files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Flask-specific files
+instance/
+.flaskenv
+
+# Database files
+*.sqlite
+*.db
+
+# Log files
+*.log
+
+# Environment variables
+.env

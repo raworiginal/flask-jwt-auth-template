@@ -1,0 +1,86 @@
+# app.py
+# Import the 'Flask' class from the 'flask' library.
+from flask import Flask, jsonify, request
+import psycopg2
+import psycopg2.extras
+from dotenv import load_dotenv
+import os
+import jwt
+import bcrypt
+
+load_dotenv()
+
+# Initialize Flask
+# We'll use the pre-defined global '__name__' variable to tell Flask where it is.
+app = Flask(__name__)
+
+
+def get_db_connection():
+  connection = psycopg2.connect(host='localhost',
+                                database='flask_auth_db',
+                                user=os.getenv('POSTGRES_USERNAME'),
+                                password=os.getenv('POSTGRES_PASSWORD'))
+  return connection
+
+# Define our route
+# This syntax is using a Python decorator, which is essentially a succinct way to wrap a function in another function.
+
+
+@app.route('/')
+def index():
+  return "Hello, world!"
+
+
+@app.route("/sign-token", methods=['GET'])
+def sign_token():
+  user = {
+      "id": 1,
+      "username": "test",
+      "password": "test"
+  }
+  token = jwt.encode(user, os.getenv("JWT_SECRET"), algorithm="HS256")
+  return jsonify({"token": token})
+
+
+@app.route('/verify-token', methods=['POST'])
+def verify_token():
+  try:
+    token = request.headers.get('Authorization').split(' ')[1]
+    decoded_token = jwt.decode(token, os.getenv(
+        'JWT_SECRET'), algorithms=["HS256"])
+    return jsonify({"user": decoded_token})
+  except Exception as err:
+    return jsonify({"err": err.message})
+
+
+@app.route('/auth/sign-up', methods=['POST'])
+def sign_up():
+  try:
+    new_user_data = request.get_json()
+    connection = get_db_connection()
+    cursor = connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cursor.execute("SELECT * FROM users WHERE username = %s;",
+                   (new_user_data["username"],))
+    existing_user = cursor.fetchone()
+    if existing_user:
+      cursor.close()
+      return jsonify({"err": "Username already taken"}), 400
+    hashed_password = bcrypt.hashpw(
+        bytes(new_user_data["password"], 'utf-8'), bcrypt.gensalt())
+    cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s) RETURNING id, username",
+                   (new_user_data["username"], hashed_password.decode('utf-8')))
+    created_user = cursor.fetchone()
+    connection.commit()
+    connection.close()
+    # Construct the payload
+    payload = {"username": created_user["username"], "id": created_user["id"]}
+    # Create the token, attaching the payload
+    token = jwt.encode({"payload": payload}, os.getenv('JWT_SECRET'))
+    # Send the token instead of the user
+    return jsonify({"token": token}), 201
+  except Exception as err:
+    return jsonify({"err": str(err)}), 401
+
+
+# Run our application, by default on port 5000
+app.run()
