@@ -111,17 +111,19 @@ def sign_in():
     connection.close()
 
 
-@app.route("/users")
+@app.route('/users/<user_id>')
 @token_required
-def users_index():
+def users_index(user_id):
+  if user_id != g.user["id"]:
+    return jsonify({"err": "Unauthorized"}), 403
   connection = get_db_connection()
-  cursor = connection.cursor(
-      cursor_factory=psycopg2.extras.RealDictCursor
-  )
-  cursor.execute("SELECT id, username FROM users;")
-  users = cursor.fetchall()
+  cursor = connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+  cursor.execute("SELECT id, username FROM users WHERE id = %s;", (user_id))
+  user = cursor.fetchone()
   connection.close()
-  return jsonify(users), 200
+  if user is None:
+    return jsonify({"err": "User not found"}), 404
+  return jsonify(user), 200
 
 
 if __name__ == "__main__":
