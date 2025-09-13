@@ -112,6 +112,7 @@ def sign_in():
 
 
 @app.route("/users")
+@token_required
 def users_index():
   connection = get_db_connection()
   cursor = connection.cursor(
