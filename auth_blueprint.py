@@ -33,7 +33,7 @@ def sign_up():
         connection.commit()
         connection.close()
         payload = {"username": created_user["username"], "id": created_user["id"]}
-        token = jwt.encode({"payload": payload}, os.getenv("JWT_SECRET"))
+        token = jwt.encode(payload, os.getenv("JWT_SECRET"), algorithm="HS256")
         return jsonify({"token": token}), 201
     except Exception as err:
         return jsonify({"err": str(err)}), 401
@@ -58,7 +58,7 @@ def sign_in():
         if not password_is_valid:
             return jsonify({"err": "Invalid credentials."}), 401
         payload = {"username": existing_user["username"], "id": existing_user["id"]}
-        token = jwt.encode({"payload": payload}, os.getenv("JWT_SECRET"))
+        token = jwt.encode(payload, os.getenv("JWT_SECRET"), algorithm="HS256")
         return jsonify({"token": token}), 201
     except Exception as err:
         return jsonify({"err": str(err)}), 500
