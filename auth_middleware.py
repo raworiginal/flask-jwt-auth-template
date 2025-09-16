@@ -17,7 +17,7 @@ def token_required(f):
             )
             g.user = token_data
         except Exception as err:
-            return jsonify({"err": str(err)}), 500
+            return jsonify({"err": str(err)}), 502
         return f(*args, **kwargs)
 
     return decorated_function
